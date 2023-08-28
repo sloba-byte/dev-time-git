@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Page Title</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <script src='https://unpkg.com/lightweight-charts@4.0.1/dist/lightweight-charts.standalone.production.js'> </script>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            /* Add a background color to match the chart */
+            background-color: #222;
+        }
+
+        .center {
+            text-align: center;
+            margin: auto;
+            width: 70%;
+            height: 400px;
+            padding: 20px;
+            margin-bottom: 50px;
+        }
+
+        .red {
+            color: red;
+        }
+
+        .green {
+            color: green;
+        }
+    </style>
+    <script>
+        //Test data
+        let testCandles = [
+            {
+                time: '2023-06-22T22:42:10Z',
+                open: 104.5614412226746,
+                close: 108.9974612905403,
+                high: 121.20998259466148,
+                low: 96.65376292551082,
+            },
+            {
+                time: '2023-06-22T22:43:10Z',
+                open: 110.16538466099634,
+                close: 110.46815600023501,
+                high: 111.3650273696516,
+                low: 82.65543461471314,
+            },
+            {
+                time: '2023-06-22T22:44:10Z',
+                open: 105.03104735287424,
+                close: 90.62131977740425,
+                high: 109.19838270252615,
+                low: 82.30106956144076,
+            },
+            {
+                time: '2023-06-22T22:45:10Z',
+                open: 89.25819769856513,
+                close: 96.80120024431532,
+                high: 101.92074283374939,
+                low: 89.25819769856513,
+            },
+            {
+                time: '2023-06-22T22:46:10Z',
+                open: 104.12503365679314,
+                close: 94.87113928076117,
+                high: 104.12503365679314,
+                low: 85.42405005240111,
+            },
+        ]
+
+
+        //Test data - end
+
+        const chartOptions = {
+            rightPriceScale: {
+                visible: true,
+            },
+            leftPriceScale: {
+                visible: false,
+            },
+            layout: {
+                background: { color: '#222' },
+                textColor: '#DDD',
+            },
+            grid: {
+                vertLines: { color: '#444' },
+                horzLines: { color: '#444' },
+            },
+            crosshair: {
+                mode: 0, // CrosshairMode.Normal
+            },
+            invertScale: true,
+            //width: 600,
+            //height: 300,
+            timeScale: {
+                timeVisible: true,
+                secondsVisible: false,
+            }
+        }
+
+        const aboveColors = ['#FFD850', '#FF8150']
+        const belowColors = ['#50ECEF', '#509DEF']
+
+        const green = '#4CAF50'
+        const red = '#FF5252'
+        //const belowColors = ['#50EF53', '#50EFA3']
+        //TODO: There is a bug here, but you will find it later :)
+        function addCharts() {
+
+            div = newDiv("div_" + 0, "ma jebem ti majku")
+            //const chartOptionss = { layout: { textColor: 'black', background: { type: 'solid', color: 'white' } } };
+
+            const chart = LightweightCharts.createChart(div, chartOptions);
+
+            // const chart = createChart(document.getElementById('container'), chartOptions);
+            const histogramSeries = chart.addHistogramSeries({ color: '#26a69a' });
+
+            const data = [{ value: 5, time: convertDate('2023-08-26T14:00:00Z') }, { value: 0, time: convertDate('2023-08-26T14:15:00Z') }, { value: 5, time: convertDate('2023-08-26T14:30:00Z'), color: 'red' }];
+
+            histogramSeries.setData(data);
+
+            chart.timeScale().fitContent();
+
+        }
+
+        function convertDate(dateString) {
+            return new Date(dateString).valueOf() / 1000;
+        }
+        function newDiv(id, info) {
+            let iDiv = document.createElement('div');
+            let iP = document.createElement('p');
+            iP.innerText = info
+            iP.className = 'red'
+            if (info.includes('+')) {
+                iP.className = 'green'
+            }
+            iDiv.appendChild(iP)
+            iDiv.id = id;
+            iDiv.className = 'center';
+            //document.getElementsByTagName('body')[0].appendChild(iP);
+            document.getElementsByTagName('body')[0].appendChild(iDiv);
+            return iDiv
+        }
+    </script>
+</head>
+
+<body onload="addCharts()">
+
+</body>
+
+</html>
