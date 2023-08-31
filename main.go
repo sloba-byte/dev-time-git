@@ -6,43 +6,15 @@ import (
 	"fmt"
 	"log"
 	"os"
+
 	"sort"
-	"time"
 	t "time"
 
 	"github.com/google/go-github/v54/github"
-) // with go modules enabled (GO111MODULE=on or outside GOPATH)
-
-type CommitInfo struct {
-	Title      string
-	StartWork  t.Time
-	FinishWork t.Time
-	PrUrl      string
-	Init       bool
-}
-
-type WorkInterval struct {
-	Start t.Time
-	End   t.Time
-	Infos []CommitInfo
-}
-
-type ChartInto struct {
-	Date  t.Time
-	Value int
-}
-
-type WorkDay struct {
-	Sleep int
-	Work  int
-	Waste int
-
-	WorkToWaste float64
-
-	DayIn15Minuts []ChartInto
-}
+)
 
 func main() {
+
 	client := github.NewClient(nil)
 
 	owner := "petrovicdarko1234"
@@ -51,14 +23,14 @@ func main() {
 	ctx := context.Background()
 
 	prOpts := github.PullRequestListOptions{
-		//State: "all",
+		State: "all",
 	}
 	prs, _, err := client.PullRequests.List(ctx, owner, repo, &prOpts)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	timeZoneDiff := time.Hour * 2
+	timeZoneDiff := t.Hour * 2
 
 	//TODO remove this for prod
 	//prs = prs[1:2]
@@ -73,9 +45,9 @@ func main() {
 
 		for i := 0; i < len(commits); i++ {
 			date := commits[i].Commit.Author.Date.Time.Add(timeZoneDiff)
-			startWork := date.Add(-(time.Hour / 2))
+			startWork := date.Add(-(t.Hour / 2))
 			if i == 0 {
-				startWork = date.Add(-(2 * time.Hour))
+				startWork = date.Add(-(2 * t.Hour))
 			}
 			commitDates = append(commitDates, CommitInfo{
 				Title:      *p.Title,
@@ -85,7 +57,7 @@ func main() {
 				StartWork:  startWork,
 			})
 		}
-
+		t.Sleep(t.Second * 15)
 	}
 
 	sort.Slice(commitDates, func(i, j int) bool {
@@ -128,15 +100,15 @@ func main() {
 	}
 	os.WriteFile("work_intervals.txt", workStr, 0666)
 
-	//lets create day, aligh it to 15 minutes and calculates wasted time...
+	//lets create day, aligh it to 15 minutes and calculates wasted t...
 	endSleepI := 4 * 8    //until 8AM
 	startSleepI := 4 * 23 //from 23AM
 
-	moveInterval := time.Minute * 15
-	dayInterval := time.Hour * 24
+	moveInterval := t.Minute * 15
+	dayInterval := t.Hour * 24
 
 	theDay := workIntervals[0].Start
-	theDay = time.Date(
+	theDay = t.Date(
 		theDay.Year(),
 		theDay.Month(),
 		theDay.Day(),
@@ -159,45 +131,75 @@ func main() {
 		for j := 0; j < 24*4; j++ {
 			info := ChartInto{
 				Date:  curDate,
-				Value: 0,
+				Value: -5,
 			}
 
-			if j <= endSleepI {
-				info.Value = -5
-			} else if j > startSleepI {
-				info.Value = -5
+			if j < endSleepI {
+				info.Value = 0
+			} else if j >= startSleepI {
+				info.Value = 0
 			} else if i < len(workIntervals) && workIntervals[i].End.Before(nextDay) {
 				if InTimeSpan(workIntervals[i].Start, workIntervals[i].End, curDate) {
 					info.Value = 5
-					work++
 				} else if workIntervals[i].End.Before(curDate) { //when outside of range move
 					i++
 				}
 			} else {
+				info.Value = -5
+			}
+			if info.Value == -5 {
 				waste++
-				info.Value = 0
+			} else if info.Value == 5 {
+				work++
 			}
 			workDays[k].DayIn15Minuts = append(workDays[k].DayIn15Minuts, info)
 
 			curDate = curDate.Add(moveInterval)
 		}
-		workDays[k].Sleep = 9 * 60
-		workDays[k].Work = work * 15
-		workDays[k].Waste = waste * 15
-		workDays[k].WorkToWaste = float64(work) / float64(waste)
+		workDays[k].Sleep = 9
+		workDays[k].Work = float64(work) / 4
+		workDays[k].Waste = float64(waste) / 4
+		workDays[k].WorkToWaste = workDays[k].Work / workDays[k].Waste
+		workDays[k].Minimum6HourRation = workDays[k].Work / 6
+		workDays[k].Optimal8HourRation = workDays[k].Work / 8
+		workDays[k].Crazy10HourRation = workDays[k].Work / 10
+
 		k++
 		theDay = curDate
 		nextDay = theDay.Add(dayInterval)
 	}
 
+	for i, j := 0, len(workDays)-1; i < j; i, j = i+1, j-1 {
+		workDays[i], workDays[j] = workDays[j], workDays[i]
+	}
+
 	os.WriteFile("days.json", JsonIdent(workDays), 0666)
 
+	var summary WorkSummary
+
+	for _, w := range workDays {
+		if w.Minimum6HourRation > 0.8 {
+			summary.GreenDays++
+		} else if w.Minimum6HourRation < 0.5 {
+			summary.RedDays++
+		} else {
+			summary.YellowDays++
+		}
+	}
+
+	summary.Days = summary.GreenDays + summary.RedDays + summary.YellowDays
+
+	summary.GreenPerc = (float64(summary.GreenDays) / float64(summary.Days)) * 100
+	summary.RedPerc = (float64(summary.RedDays) / float64(summary.Days)) * 100
+	summary.YellowPerc = (float64(summary.YellowDays) / float64(summary.Days)) * 100
+
+	os.WriteFile("summary.json", JsonIdent(summary), 0666)
 }
 
 // Inclusive (start, end)
 func InTimeSpan(start, end, check t.Time) bool {
 	startUnix := start.Add(-15 * t.Minute).UnixMilli()
-	endUnix := end.Add(15 * time.Minute).UnixMilli()
+	endUnix := end.Add(15 * t.Minute).UnixMilli()
 	if startUnix > endUnix {
 		log.Fatalf("InTimeSpan endUnix > startUnix : %v -> %v", start, end)
 	}
@@ -215,4 +217,46 @@ func JsonIdent(t interface{}) []byte {
 		log.Fatalf("JsonB: %v", err)
 	}
 	return jb
+}
+
+type CommitInfo struct {
+	Title      string
+	StartWork  t.Time
+	FinishWork t.Time
+	PrUrl      string
+	Init       bool
+}
+
+type WorkInterval struct {
+	Start t.Time
+	End   t.Time
+	Infos []CommitInfo
+}
+
+type ChartInto struct {
+	Date  t.Time
+	Value int
+}
+
+type WorkDay struct {
+	Sleep float64
+	Work  float64
+	Waste float64
+
+	WorkToWaste        float64
+	Minimum6HourRation float64
+	Optimal8HourRation float64
+	Crazy10HourRation  float64
+
+	DayIn15Minuts []ChartInto
+}
+
+type WorkSummary struct {
+	Days       int
+	GreenDays  int
+	GreenPerc  float64
+	YellowDays int
+	YellowPerc float64
+	RedDays    int
+	RedPerc    float64
 }

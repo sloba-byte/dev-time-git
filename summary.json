@@ -1,0 +1,9 @@
+{
+    "Days": 20,
+    "GreenDays": 5,
+    "GreenPerc": 25,
+    "YellowDays": 3,
+    "YellowPerc": 15,
+    "RedDays": 12,
+    "RedPerc": 60
+}
