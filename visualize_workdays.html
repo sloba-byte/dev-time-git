@@ -104,7 +104,7 @@
 
             return green
         }
-        let days = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+        let days = ["Sunday", "Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
         function day(dateStr) {
             return days[new Date(dateStr).getDay()]
@@ -118,7 +118,7 @@
             summaryDiv(exampleSummary)
             for (let i = 0; i < testData.length; i++) {
                 const info = [
-                    "Date(" + day(testData[i].DayIn15Minuts[0].Date) + "): " + testData[i].DayIn15Minuts[0].Date.split("T")[0],
+                    day(testData[i].DayIn15Minuts[0].Date) + ": " + testData[i].DayIn15Minuts[0].Date.split("T")[0],
                     "Worked(Hours): " + testData[i].Work,
                     "Wasted(hours): " + testData[i].Waste,
                     "Worked / Wasted(hopefully >0.5): " + testData[i].WorkToWaste.toFixed(2),
