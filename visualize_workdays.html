@@ -51,6 +51,17 @@
         //Test data - end
 
         const chartOptions = {
+            handleScroll: {
+                mouseWheel: false,
+                pressedMouseMove: false,
+                horzTouchDrag: false,
+                vertTouchDrag: false
+            },
+            handleScale: {
+                axisPressedMouseMove: false,
+                mouseWheel: false,
+                pinch: false,
+            },
             rightPriceScale: {
                 visible: false,
             },
